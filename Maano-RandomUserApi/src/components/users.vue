@@ -1,11 +1,26 @@
 <script setup lang="ts">
 import { useUserStore } from '@/stores/userStore';
 import { storeToRefs } from 'pinia';
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
+import userModal from '@/components/userModal.vue'; // Adjust the path if necessary
+import type { Results as User } from '@/types/Data'; // Import the type
 
 const userStore = useUserStore();
 const { users } = storeToRefs(userStore);
 const { fetchUsers, loadLocalStorage } = userStore;
+
+// A ref to hold the user object that should be displayed in the modal
+const selectedUser = ref<User | null>(null);
+
+// Function to set the selected user, which shows the modal
+const openModal = (user: User) => {
+  selectedUser.value = user;
+};
+
+// Function to clear the selected user, which hides the modal
+const closeModal = () => {
+  selectedUser.value = null;
+};
 
 onMounted(() => {
   loadLocalStorage();
@@ -18,40 +33,54 @@ onMounted(() => {
       Fetch Users
     </button>
   </div>
-  <div>
-    <!-- CHANGE 1: The class="user-grid" is moved here, to the container <ul> -->
+  <div class="user-container">
     <ul class="user-grid">
-      <!-- 
-        The class is removed from the <li>.
-        CHANGE 2: The :key is now user.login.uuid, a guaranteed unique ID.
-      -->
-      <li v-for="user in users" :key="user.login.uuid">
+      <!-- When a list item is clicked, call openModal with that user's data -->
+      <li v-for="user in users" :key="user.login.uuid" @click="openModal(user)">
         <img :src="user.picture.large" alt="User Picture">
       </li>
     </ul>
   </div>
+
+  <!-- 
+    The modal component itself.
+    - It receives the selectedUser as a prop.
+    - It listens for a 'close' event to call the closeModal function.
+  -->
+  <userModal :user="selectedUser" @close="closeModal" />
 </template>
 
 <style scoped>
-/* This CSS now correctly targets the <ul> container */
+.user-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 1rem;
+}
+
 .user-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   width: 80vw;
-  
-  /* These are fine */
+  gap: 1rem;
   list-style-type: none;
   padding: 0;
   margin: 0;
 }
 
-/* This rule now correctly styles the <img> inside the <li> which is inside the .user-grid */
+.user-grid li {
+  flex: 0 1 calc(20% - 1rem);
+  box-sizing: border-box;
+  cursor: pointer; /* Important for user experience */
+  transition: transform 0.2s ease-in-out;
+}
+
+.user-grid li:hover {
+  transform: scale(1.05); /* Adds a nice interactive feel */
+}
+
 .user-grid li img {
-  /* 
-   * CHANGE 3: Changed from 300px to 100%. This makes the image
-   * fluid and allows it to fill the grid column it's in.
-  */
   width: 100%;
   height: auto;
   display: block;

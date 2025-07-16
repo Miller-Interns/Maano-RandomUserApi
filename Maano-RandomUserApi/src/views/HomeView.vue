@@ -1,9 +1,21 @@
 <script setup lang="ts">
-import TheWelcome from '../components/users.vue'
+import users from '../components/users.vue'
 </script>
 
 <template>
   <main>
-    <TheWelcome />
+    <users />
   </main>
 </template>
+
+<style scoped>
+.main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100vw; /* Ensures the main section takes full width */
+  height: 100vh; /* Optional: Makes the main section full height */
+}
+
+</style>

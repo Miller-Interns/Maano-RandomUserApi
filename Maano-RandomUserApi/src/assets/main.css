@@ -25,10 +25,15 @@ a,
   body {
     display: flex;
     place-items: center;
+    background-size: cover;
   }
 
   #app {
     display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
     padding: 0 2rem;
   }
 }
