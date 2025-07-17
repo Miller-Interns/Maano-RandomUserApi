@@ -1,9 +1,9 @@
 <script setup lang="ts">
 // Import the specific type from your Data.ts file
-import type { Results } from '@/types/Data';
+import type { User } from '@/types/Data';
 
 defineProps<{
-    user: Results | null;
+    user: User | null;
 }>();
 
 const emit = defineEmits(['close']);

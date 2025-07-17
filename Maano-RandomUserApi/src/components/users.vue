@@ -1,59 +1,91 @@
 <script setup lang="ts">
-import { useUserStore } from '@/stores/userStore';
+import { useUserStore } from '../stores/userStore';
 import { storeToRefs } from 'pinia';
-import { onMounted, ref } from 'vue';
-import userModal from '@/components/userModal.vue'; // Adjust the path if necessary
-import type { Results as User } from '@/types/Data'; // Import the type
+import { onMounted, ref, computed } from 'vue';
+import userModal from './userModal.vue';
+// Use the new 'User' type. Make sure the import path is correct.
+import type { User } from '../types/Data';
 
 const userStore = useUserStore();
-const { users } = storeToRefs(userStore);
-const { fetchUsers, loadLocalStorage } = userStore;
+// We still need currentPage for filtering and allUsers for the source data.
+const { allUsers, currentPage } = storeToRefs(userStore);
 
-// A ref to hold the user object that should be displayed in the modal
+// Ref for the gender filter dropdown
+const selectedGender = ref<string>(''); // Default to 'All'
+
+// NEW: A single computed property to get the right users to display.
+// It reactively filters based on BOTH the current page AND the selected gender.
+const usersToDisplay = computed(() => {
+  return allUsers.value.filter(user => {
+    const isCorrectPage = user.page === currentPage.value;
+    // If no gender is selected, the second part is always true.
+    const isCorrectGender = !selectedGender.value || user.gender === selectedGender.value;
+    return isCorrectPage && isCorrectGender;
+  });
+});
+
+// A ref to hold the User object for the modal
 const selectedUser = ref<User | null>(null);
 
-// Function to set the selected user, which shows the modal
+// Function to open the modal
 const openModal = (user: User) => {
   selectedUser.value = user;
 };
 
-// Function to clear the selected user, which hides the modal
+// Function to close the modal
 const closeModal = () => {
   selectedUser.value = null;
 };
 
+// REMOVED: The filterGender() function is no longer needed!
+// The 'usersToDisplay' computed property handles this automatically
+// whenever 'selectedGender' changes thanks to v-model.
+
 onMounted(() => {
-  loadLocalStorage();
+  userStore.loadLocalStorage();
 });
 </script>
 
 <template>
   <div>
-    <button @click="fetchUsers">
-      Fetch Users
-    </button>
+    <!-- The v-model is now all you need. No more @change handler. -->
+    <select v-model="selectedGender">
+      <option value="">All</option>
+      <option value="female">Female</option>
+      <option value="male">Male</option>
+    </select>
   </div>
   <div class="user-container">
+    <!-- MODIFIED: Loop over the new computed property 'usersToDisplay' -->
     <ul class="user-grid">
-      <!-- When a list item is clicked, call openModal with that user's data -->
-      <li v-for="user in users" :key="user.login.uuid" @click="openModal(user)">
-        <img :src="user.picture.large" alt="User Picture">
+      <li v-for="user in usersToDisplay" :key="user.login.uuid" @click="openModal(user)">
+        <img :src="user.picture.large" :alt="`${user.name.first} ${user.name.last}`">
       </li>
     </ul>
+    
+    <!-- Pagination Controls (no changes needed here) -->
+    <div class="pagination-controls">
+      <button @click="userStore.previousPage()" :disabled="!userStore.hasPreviousPage">
+        Previous Page
+      </button>
+      
+      <span>Page {{ userStore.currentPage }} of {{ userStore.totalPages }}</span>
+      
+      <button @click="userStore.nextPage()" :disabled="userStore.loading">
+        Next Page
+      </button>
+    </div>
   </div>
 
-  <!-- 
-    The modal component itself.
-    - It receives the selectedUser as a prop.
-    - It listens for a 'close' event to call the closeModal function.
-  -->
   <userModal :user="selectedUser" @close="closeModal" />
 </template>
 
 <style scoped>
+/* Renamed classes for clarity */
 .user-container {
   display: flex;
-  justify-content: center;
+  flex-direction: column; /* To stack grid and controls */
+  align-items: center;
   width: 100%;
   padding: 1rem;
 }
@@ -72,12 +104,12 @@ onMounted(() => {
 .user-grid li {
   flex: 0 1 calc(20% - 1rem);
   box-sizing: border-box;
-  cursor: pointer; /* Important for user experience */
+  cursor: pointer;
   transition: transform 0.2s ease-in-out;
 }
 
 .user-grid li:hover {
-  transform: scale(1.05); /* Adds a nice interactive feel */
+  transform: scale(1.05);
 }
 
 .user-grid li img {
@@ -85,5 +117,9 @@ onMounted(() => {
   height: auto;
   display: block;
   border-radius: 8px;
+}
+
+.pagination-controls {
+  margin-top: 2rem;
 }
 </style>

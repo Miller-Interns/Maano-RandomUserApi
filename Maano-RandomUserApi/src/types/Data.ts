@@ -1,5 +1,9 @@
-//Main types
-export type Results = {
+// types/Data.ts
+
+// Renamed from Results to User for better semantics.
+// Added the 'page' property.
+export type User = {
+    page: number; // <-- ADDED THIS PROPERTY
     gender: string;
     name: Name;
     location: Location;
@@ -14,13 +18,22 @@ export type Results = {
     nat: string;
 }
 
+// NOTE: The 'Pages' type is no longer needed and can be deleted.
+/*
+export type Pages = {
+    page: number[];
+    results: Results[]; // This structure is now obsolete
+}
+*/
+
+
+// --- All other types (Name, Location, etc.) remain the same ---
 export type Info = {
     seed: string;
     results: number;
     page: number;
     version: string;
 }
-//Main types end
 
 export type Name = {
     title: string;
@@ -28,7 +41,16 @@ export type Name = {
     last: string;
 }
 
-//Location
+export type Location = {
+    street: Street;
+    city: string;
+    state: string;
+    country: string;
+    postcode: string;
+    coordinates: Coordinates;
+    timezone: Timezone;
+}
+
 export type Street = {
     number: number;
     name: string;
@@ -43,17 +65,6 @@ export type Timezone = {
     offset: string;
     description: string;
 }
-
-export type Location = {
-    street: Street;
-    city: string;
-    state: string;
-    country: string;
-    postcode: string;
-    coordinates: Coordinates;
-    timezone: Timezone;
-}
-//Location end
 
 export type Login = {
     uuid: string;
