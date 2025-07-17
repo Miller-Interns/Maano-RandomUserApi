@@ -26,7 +26,7 @@ a,
     display: flex;
     place-items: center;
     background-size: cover;
-    background-image: url('./images/hitman_background.jpg');
+    background-image: url('./images/CIA_background.png');
   }
 
   #app {

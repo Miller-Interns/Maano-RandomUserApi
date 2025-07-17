@@ -74,7 +74,7 @@ const selectedFilter = computed({
 .filter-controls {
   display: flex;
   gap: 1rem;
-  margin-bottom: 2rem;
+  margin-left: 15px;
   font-family: 'Courier New', Courier, monospace;
 }
 
@@ -83,7 +83,7 @@ const selectedFilter = computed({
   color: #00ff00;
   background: #111;
   border: 2px solid #00ff00;
-  padding: 10px 20px;
+  padding: 6px 20px;
   font-size: 1.2rem;
   font-weight: bold;
   text-transform: uppercase;
