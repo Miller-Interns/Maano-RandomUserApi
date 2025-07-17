@@ -3,9 +3,10 @@
 import { useUserStore } from '../stores/userStore';
 import { storeToRefs } from 'pinia';
 import { onMounted, ref, watch } from 'vue';
-import userModal from './userModal.vue';
+import userModal from './user-modal.vue';
 import type { User } from '../types/Data';
-import loadingSpinner from './loadingSpinner.vue';
+import loadingSpinner from './loading-spinner.vue';
+import FilterControls from './filter-controls.vue';
 
 const userStore = useUserStore();
 const { 
@@ -42,17 +43,8 @@ onMounted(() => {
 
 <template>
   <!-- Filter Controls: Replaced <select> with radio buttons -->
-  <div class="filter-controls">
-    <label>
-      <input type="radio" v-model="selectedFilter" value="all" /> All
-    </label>
-    <label>
-      <input type="radio" v-model="selectedFilter" value="female" /> Female
-    </label>
-    <label>
-      <input type="radio" v-model="selectedFilter" value="male" /> Male
-    </label>
-  </div>
+  <FilterControls v-model="selectedFilter" />
+
 
   <div class="user-container">
     <div v-if="error" class="error-message">{{ error }}</div>
@@ -90,20 +82,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.filter-controls {
-  display: flex;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-  font-size: 1.1rem;
-}
-
-.filter-controls label {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 .user-container {
   display: flex;
   flex-direction: column;
