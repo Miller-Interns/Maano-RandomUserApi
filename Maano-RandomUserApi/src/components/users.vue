@@ -1,45 +1,36 @@
+<!-- users.vue -->
 <script setup lang="ts">
 import { useUserStore } from '../stores/userStore';
 import { storeToRefs } from 'pinia';
 import { onMounted, ref, computed } from 'vue';
 import userModal from './userModal.vue';
-// Use the new 'User' type. Make sure the import path is correct.
 import type { User } from '../types/Data';
+import loadingSpinner from './loadingSpinner.vue'; // <-- ADDED: Import the new component
 
 const userStore = useUserStore();
-// We still need currentPage for filtering and allUsers for the source data.
-const { allUsers, currentPage } = storeToRefs(userStore);
+// <-- MODIFIED: Destructure 'loading' from the store
+const { allUsers, currentPage, loading, error } = storeToRefs(userStore);
+ // <-- ADDED 'error' for display
 
-// Ref for the gender filter dropdown
-const selectedGender = ref<string>(''); // Default to 'All'
+const selectedGender = ref<string>('');
 
-// NEW: A single computed property to get the right users to display.
-// It reactively filters based on BOTH the current page AND the selected gender.
 const usersToDisplay = computed(() => {
   return allUsers.value.filter(user => {
     const isCorrectPage = user.page === currentPage.value;
-    // If no gender is selected, the second part is always true.
     const isCorrectGender = !selectedGender.value || user.gender === selectedGender.value;
     return isCorrectPage && isCorrectGender;
   });
 });
 
-// A ref to hold the User object for the modal
 const selectedUser = ref<User | null>(null);
 
-// Function to open the modal
 const openModal = (user: User) => {
   selectedUser.value = user;
 };
 
-// Function to close the modal
 const closeModal = () => {
   selectedUser.value = null;
 };
-
-// REMOVED: The filterGender() function is no longer needed!
-// The 'usersToDisplay' computed property handles this automatically
-// whenever 'selectedGender' changes thanks to v-model.
 
 onMounted(() => {
   userStore.loadLocalStorage();
@@ -48,30 +39,43 @@ onMounted(() => {
 
 <template>
   <div>
-    <!-- The v-model is now all you need. No more @change handler. -->
     <select v-model="selectedGender">
       <option value="">All</option>
       <option value="female">Female</option>
       <option value="male">Male</option>
     </select>
+    <button @click="userStore.purgeUsers">Purge Users</button>
   </div>
   <div class="user-container">
-    <!-- MODIFIED: Loop over the new computed property 'usersToDisplay' -->
-    <ul class="user-grid">
-      <li v-for="user in usersToDisplay" :key="user.login.uuid" @click="openModal(user)">
-        <img :src="user.picture.large" :alt="`${user.name.first} ${user.name.last}`">
-      </li>
-    </ul>
+    <!-- ADDED: Display error messages from the store -->
+    <div v-if="error" class="error-message">{{ error }}</div>
+
+    <transition name="fade" mode="out-in">
+      <loadingSpinner v-if="loading" key="spinner" />
+      
+      <!-- ADDED: Show a message when a filtered page is empty but not loading -->
+      <div v-else-if="usersToDisplay.length === 0" class="empty-state" key="empty">
+        <p>No users match the current filter on this page.</p>
+        <p>Click "Next Page" to find more.</p>
+      </div>
+
+      <ul v-else class="user-grid" key="grid">
+        <!-- ... v-for loop is the same ... -->
+        <li v-for="user in usersToDisplay" :key="user.login.uuid" @click="openModal(user)">
+          <img :src="user.picture.large" :alt="`${user.name.first} ${user.name.last}`">
+        </li>
+      </ul>
+    </transition>
     
-    <!-- Pagination Controls (no changes needed here) -->
     <div class="pagination-controls">
-      <button @click="userStore.previousPage()" :disabled="!userStore.hasPreviousPage">
+      <button @click="userStore.previousPage()" :disabled="!userStore.hasPreviousPage || loading">
         Previous Page
       </button>
       
       <span>Page {{ userStore.currentPage }} of {{ userStore.totalPages }}</span>
       
-      <button @click="userStore.nextPage()" :disabled="userStore.loading">
+      <!-- MODIFIED: Pass the selectedGender to the nextPage action -->
+      <button @click="userStore.nextPage(selectedGender)" :disabled="loading">
         Next Page
       </button>
     </div>
@@ -84,7 +88,7 @@ onMounted(() => {
 /* Renamed classes for clarity */
 .user-container {
   display: flex;
-  flex-direction: column; /* To stack grid and controls */
+  flex-direction: column;
   align-items: center;
   width: 100%;
   padding: 1rem;
@@ -101,6 +105,7 @@ onMounted(() => {
   margin: 0;
 }
 
+/* ... other styles remain the same ... */
 .user-grid li {
   flex: 0 1 calc(20% - 1rem);
   box-sizing: border-box;
@@ -121,5 +126,16 @@ onMounted(() => {
 
 .pagination-controls {
   margin-top: 2rem;
+}
+
+/* <-- ADDED: CSS for the fade transition --> */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
