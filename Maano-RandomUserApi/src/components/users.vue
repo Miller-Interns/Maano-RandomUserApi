@@ -1,28 +1,30 @@
-<!-- users.vue -->
+<!-- components/users.vue -->
 <script setup lang="ts">
 import { useUserStore } from '../stores/userStore';
 import { storeToRefs } from 'pinia';
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import userModal from './userModal.vue';
 import type { User } from '../types/Data';
-import loadingSpinner from './loadingSpinner.vue'; // <-- ADDED: Import the new component
+import loadingSpinner from './loadingSpinner.vue';
 
 const userStore = useUserStore();
-// <-- MODIFIED: Destructure 'loading' from the store
-const { allUsers, currentPage, loading, error } = storeToRefs(userStore);
- // <-- ADDED 'error' for display
+const { 
+  paginatedUsers, // Use the new getter for display
+  currentPage, 
+  totalPages,
+  loading, 
+  error 
+} = storeToRefs(userStore);
 
-const selectedGender = ref<string>('');
-
-const usersToDisplay = computed(() => {
-  return allUsers.value.filter(user => {
-    const isCorrectPage = user.page === currentPage.value;
-    const isCorrectGender = !selectedGender.value || user.gender === selectedGender.value;
-    return isCorrectPage && isCorrectGender;
-  });
-});
-
+// This local ref is bound to the radio buttons
+const selectedFilter = ref('all');
 const selectedUser = ref<User | null>(null);
+
+// Watch for changes on the filter and trigger a new API fetch
+watch(selectedFilter, (newFilter) => {
+  // This is the "purge and replace" logic
+  userStore.fetchUsers(newFilter);
+});
 
 const openModal = (user: User) => {
   selectedUser.value = user;
@@ -32,50 +34,53 @@ const closeModal = () => {
   selectedUser.value = null;
 };
 
+// On component mount, call the store's initialization action
 onMounted(() => {
-  userStore.loadLocalStorage();
+  userStore.initializeApp();
 });
 </script>
 
 <template>
-  <div>
-    <select v-model="selectedGender">
-      <option value="">All</option>
-      <option value="female">Female</option>
-      <option value="male">Male</option>
-    </select>
-    <button @click="userStore.purgeUsers">Purge Users</button>
+  <!-- Filter Controls: Replaced <select> with radio buttons -->
+  <div class="filter-controls">
+    <label>
+      <input type="radio" v-model="selectedFilter" value="all" /> All
+    </label>
+    <label>
+      <input type="radio" v-model="selectedFilter" value="female" /> Female
+    </label>
+    <label>
+      <input type="radio" v-model="selectedFilter" value="male" /> Male
+    </label>
   </div>
+
   <div class="user-container">
-    <!-- ADDED: Display error messages from the store -->
     <div v-if="error" class="error-message">{{ error }}</div>
 
     <transition name="fade" mode="out-in">
       <loadingSpinner v-if="loading" key="spinner" />
-      
-      <!-- ADDED: Show a message when a filtered page is empty but not loading -->
-      <div v-else-if="usersToDisplay.length === 0" class="empty-state" key="empty">
-        <p>No users match the current filter on this page.</p>
-        <p>Click "Next Page" to find more.</p>
+
+      <div v-else-if="paginatedUsers.length === 0" class="empty-state" key="empty">
+        <p>No users found.</p>
       </div>
 
+      <!-- Iterate over the new `paginatedUsers` getter -->
       <ul v-else class="user-grid" key="grid">
-        <!-- ... v-for loop is the same ... -->
-        <li v-for="user in usersToDisplay" :key="user.login.uuid" @click="openModal(user)">
+        <li v-for="user in paginatedUsers" :key="user.login.uuid" @click="openModal(user)">
           <img :src="user.picture.large" :alt="`${user.name.first} ${user.name.last}`">
         </li>
       </ul>
     </transition>
     
-    <div class="pagination-controls">
-      <button @click="userStore.previousPage()" :disabled="!userStore.hasPreviousPage || loading">
+    <div class="pagination-controls" v-if="!loading && paginatedUsers.length > 0">
+      <!-- Call the new `changePage` action. Disable based on currentPage. -->
+      <button @click="userStore.changePage('previous')" :disabled="currentPage <= 1">
         Previous Page
       </button>
       
-      <span>Page {{ userStore.currentPage }} of {{ userStore.totalPages }}</span>
+      <span>Page {{ currentPage }} of {{ totalPages }}</span>
       
-      <!-- MODIFIED: Pass the selectedGender to the nextPage action -->
-      <button @click="userStore.nextPage(selectedGender)" :disabled="loading">
+      <button @click="userStore.changePage('next')" :disabled="currentPage >= totalPages">
         Next Page
       </button>
     </div>
@@ -85,7 +90,20 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* Renamed classes for clarity */
+.filter-controls {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+}
+
+.filter-controls label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .user-container {
   display: flex;
   flex-direction: column;
@@ -105,9 +123,8 @@ onMounted(() => {
   margin: 0;
 }
 
-/* ... other styles remain the same ... */
 .user-grid li {
-  flex: 0 1 calc(20% - 1rem);
+  flex: 0 1 calc(20% - 1rem); /* 5 users per row */
   box-sizing: border-box;
   cursor: pointer;
   transition: transform 0.2s ease-in-out;
@@ -126,9 +143,25 @@ onMounted(() => {
 
 .pagination-controls {
   margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
-/* <-- ADDED: CSS for the fade transition --> */
+.error-message, .empty-state {
+  color: #c0392b;
+  background-color: #fadbd8;
+  border: 1px solid #c0392b;
+  padding: 1rem;
+  border-radius: 8px;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex-direction: column;
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.3s ease;
