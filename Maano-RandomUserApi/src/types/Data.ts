@@ -1,9 +1,5 @@
-// types/Data.ts
-
-// Renamed from Results to User for better semantics.
-// Added the 'page' property.
 export type User = {
-    page: number; // <-- ADDED THIS PROPERTY
+    page: number;
     gender: string;
     name: Name;
     location: Location;
@@ -18,16 +14,6 @@ export type User = {
     nat: string;
 }
 
-// NOTE: The 'Pages' type is no longer needed and can be deleted.
-/*
-export type Pages = {
-    page: number[];
-    results: Results[]; // This structure is now obsolete
-}
-*/
-
-
-// --- All other types (Name, Location, etc.) remain the same ---
 export type Info = {
     seed: string;
     results: number;
