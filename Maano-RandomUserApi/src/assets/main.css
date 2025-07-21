@@ -25,11 +25,16 @@ a,
   body {
     display: flex;
     place-items: center;
+    background-size: cover;
+    background-image: url('./images/CIA_background.png');
   }
 
   #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
     padding: 0 2rem;
   }
 }

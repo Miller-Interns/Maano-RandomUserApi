@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { RouterView } from 'vue-router'
+import users from '../components/users.vue'
 </script>
 
 <template>
-  <RouterView />
+  <main>
+    <users />
+  </main>
 </template>
 
 <style scoped>
